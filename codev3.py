@@ -1,3 +1,6 @@
+# FRAME IS MASK
+# OUTPUT IS CONTOUR
+
 import cv2
 import numpy as np
 from flask import Flask, request, Response
@@ -8,29 +11,9 @@ import time
 CAM_INDEX = 1  # VirtualCam or webcam index
 
 # === Globals for sharing data ===
-offset_x = 0  # steer value (will be updated in video thread)
 thr = 0
+steer = 0
 speed = 0
-
-# === PID mc ===
-class PID:
-    def __init__(self, Kp, Ki, Kd):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.prev_error = 0
-        self.integral = 0
-
-    def update(self, error, dt):
-        self.integral += error * dt
-        derivative = (error - self.prev_error) / dt if dt > 0 else 0
-        self.prev_error = error
-        output = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
-        return output
-
-# Create PID with only P and D for simplicity
-pid = PID(Kp=0.05, Ki=0.0, Kd=0.01)
-
 
 # === Flask App ===
 app = Flask(__name__)
@@ -39,26 +22,27 @@ app = Flask(__name__)
 def handle_numbers():
     global offset_x, thr, speed
 
-    # Get values from query (Stormworks input)
-    thr = int(request.args.get('num1', 0))
-    steer = offset_x  # use the current offset from camera thread
-    speed = int(request.args.get('num3', 0))
+    # = DECODE RECV FROM SW = 
+    recv_html_X = int(request.args.get('num1', 0))
+    recv_html_Y = int(request.args.get('num2',0))  
+    recv_html_speed = int(request.args.get('num3', 0))
+    
+    print(f"Received: X coord={recv_html_X}, Y coord={recv_html_Y}, speed={recv_html_speed}")
 
-    print(f"Received: thr={thr}, steer={steer}, speed={speed}")
+    #  = ENCODE SEND TO SW =  
+    reply_html_thr = 1
+    reply_html_steer = steer
+    reply_html_speed = 100
 
-    # Double them
-    thr *= 2
-    steer *= 2
-    speed *= 2
-
-    print(f"Returned: thr={thr}, steer={steer}, speed={speed}")
+    print(f"Returned: thr={reply_html_thr}, steer={reply_html_steer}, speed={reply_html_speed}")
 
     # Return plain text for Stormworks (not JSON)
     return Response(f"{thr},{steer},{speed}", mimetype='text/plain')
 
+
 # === Video processing thread ===
 def camera_loop():
-    global offset_x
+    global thr, steer
 
     cap = cv2.VideoCapture(CAM_INDEX)
     if not cap.isOpened():
@@ -71,6 +55,8 @@ def camera_loop():
             print("Failed to grab frame")
             break
 
+        # == TRAPEZOID CREATOR ==
+        
         h, w = frame.shape[:2]
 
         trapezoid_mask = np.zeros((h, w), dtype=np.uint8)
@@ -78,19 +64,22 @@ def camera_loop():
         top_width = w // 4
 
         pts = np.array([
-            [w // 2 - bottom_width // 2, h],
-            [w // 2 + bottom_width // 2, h],
+            [w // 2 - bottom_width // 2, h*0.8],
+            [w // 2 + bottom_width // 2, h*0.8],
             [w // 2 + top_width, int(h / 4)],
             [w // 2 - top_width, int(h / 4)]
         ], dtype=np.int32)
 
         cv2.fillPoly(trapezoid_mask, [pts], 255)
 
-        # change to HSV
+        # == MASKING PARAMETERS (HSV) ==
+        
         lower_dark = np.array([0, 0, 0])
-        upper_dark = np.array([180, 50, 70])  # adjust to your road color
+        upper_dark = np.array([180, 50, 70])  # max road color
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        # == REAL MASKING BASED ON COLOR AND BOUNDING BOX(TRAPEZOID MASK) ===
         
         mask_dark = cv2.inRange(frame, lower_dark, upper_dark)
         final_mask = cv2.bitwise_and(mask_dark, trapezoid_mask)
@@ -100,6 +89,12 @@ def camera_loop():
 
         cv2.polylines(output, [pts], isClosed=True, color=(255, 0, 0), thickness=2)
 
+
+        
+        # === CONTOUR CODE ===
+
+
+        
         contours, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
             cv2.line(output, (w // 2, 0), (w // 2, h), (0, 0, 255), 2)
@@ -112,11 +107,17 @@ def camera_loop():
                 cx = int(M["m10"] / M["m00"])
                 cy = int(M["m01"] / M["m00"])
 
-                cv2.circle(output, (cx, cy), 5, (255, 255, 0), -1)
+                # CENTROID OF CONTOUR
+                cv2.circle(output, (cx, cy), 5, (0, 255, 0), -1) 
 
                 center_x = w // 2
                 offset_x = cx - center_x
+                steer = offset_x
 
+                # causes some error idk what it is
+                #cv2.circle(output, (offset_x, h//5), 5, (0, 0, 255), -1)
+
+                
                 print(f"Centroid X: {cx}, Offset: {offset_x}")
             else:
                 offset_x = 0
@@ -130,7 +131,10 @@ def camera_loop():
     cap.release()
     cv2.destroyAllWindows()
 
+
 # === Run both ===
+
+
 if __name__ == '__main__':
     # Start camera in a separate thread
     t = threading.Thread(target=camera_loop, daemon=True)
