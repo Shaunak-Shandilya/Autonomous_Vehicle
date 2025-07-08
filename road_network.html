@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Graph Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+</head>
+<body>
+<script>
+let nodes = {
+    "1": [-6000,-6000],
+    "2": [-5844,-6006],
+    "3": [-5729,-5920],
+    "4": [-5225,-6062],
+    "5": [-5129,-5428],
+    "6": [-5043,-4238],
+    "7": [-5215,-3936],
+    "8": [-5669,-3373],
+    "9": [-4846,-4036],
+    "10": [-3088,-4793],
+    "11": [-791,-5240],
+    "12": [-198,-4668],
+    "13": [1134,-3754],
+    "14": [1891,-4501],
+    "15": [2697,-4939],
+    "16": [3361,-4910],
+    "17": [2924,-5320],
+    "18": [2059,-6352],
+    "19": [2488,-8295],
+    "20": [2634,-8383],
+    "21": [2514,-8435],
+    "22": [-2299,-10154],
+    "23": [-3379,-6635],
+    "24": [-3617,-5912],
+    "25": [-4011,-6479],
+    "26": [-7924,-11563],
+    "27": [6888,-9724],
+    "28": [-838,-5646],
+    "29": [3705,-5364]
+};
+
+let edges = {
+    1: [1,2],
+    2: [2,3],
+    3: [3,4],
+    4: [4,5],
+    5: [5,3],
+    6: [5,6],
+    7: [6,7],
+    8: [7,9],
+    9: [9,6],
+    10: [7,8],
+    11: [9,10],
+    12: [10,24],
+    13: [24,23],
+    14: [23,25],
+    15: [25,24],
+    16: [4,25],
+    17: [23,22],
+    18: [22,26],
+    19: [10,11],
+    20: [11,28],
+    21: [11,12],
+    22: [12,13],
+    23: [12,18],
+    24: [13,14],
+    25: [14,15],
+    26: [15,16],
+    27: [15,17],
+    28: [16,17],
+    29: [17,18],
+    30: [18,19],
+    31: [19,20],
+    32: [20,21],
+    33: [21,19],
+    34: [20,27],
+    35: [21,22],
+    36: [22,23],
+    37: [22,26],
+    38: [16,29]
+};
+
+function setup() {
+  createCanvas(800, 600);
+  textAlign(CENTER, CENTER);
+}
+
+function draw() {
+  background(255);
+  
+  // Find min and max coordinates for scaling
+  let xMin = Infinity, xMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+  for (let node in nodes) {
+    let [x, y] = nodes[node];
+    xMin = min(xMin, x);
+    xMax = max(xMax, x);
+    yMin = min(yMin, y);
+    yMax = max(yMax, y);
+  }
+  
+  // Scale and translate coordinates to fit canvas
+  let scaleX = 700 / (xMax - xMin);
+  let scaleY = 500 / (yMax - yMin);
+  let scale = min(scaleX, scaleY);
+  let offsetX = (800 - (xMax - xMin) * scale) / 2 - xMin * scale;
+  let offsetY = (600 - (yMax - yMin) * scale) / 2 + yMax * scale; // Adjusted for vertical flip
+  
+  // Draw edges
+  stroke(0);
+  strokeWeight(1);
+  for (let edge in edges) {
+    let [n1, n2] = edges[edge];
+    let [x1, y1] = nodes[n1];
+    let [x2, y2] = nodes[n2];
+    line(x1 * scale + offsetX, -y1 * scale + offsetY,
+         x2 * scale + offsetX, -y2 * scale + offsetY);
+  }
+  
+  // Draw nodes
+  fill(255, 0, 0);
+  noStroke();
+  for (let node in nodes) {
+    let [x, y] = nodes[node];
+    ellipse(x * scale + offsetX, -y * scale + offsetY, 8, 8);
+    
+    // Draw node labels
+    fill(0);
+    textSize(10);
+    text(node, x * scale + offsetX, -y * scale + offsetY - 10);
+    fill(255, 0, 0);
+  }
+}
+</script>
+</body>
+</html>
