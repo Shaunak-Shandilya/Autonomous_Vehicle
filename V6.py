@@ -13,10 +13,10 @@ thr = 0
 steer = 0
 speed = 0
 turn_to = 0
-recv_html_X = -6000
-recv_html_Y = -6000
+recv_html_X = 0
+recv_html_Y = 0
 recv_html_bearing = 0
-path = []
+path = ["3","4","5","3","2","1"]
 
 # ===== INTERSECTIONS WITH COORDS =====
 nodes = {
@@ -30,7 +30,6 @@ nodes = {
     "29": [3705,-5364]
 }
 
-
 # ===== ROADS ======
 edges = {
     1: [1,2], 2: [2,3], 3: [3,4], 4: [4,5], 5: [5,3], 6: [5,6], 7: [6,7], 8: [7,9],
@@ -42,18 +41,21 @@ edges = {
 }
 
 def router():
-    global turn_to
+    global thr, steer, speed, turn_to, recv_html_X, recv_html_Y, recv_html_bearing
 
-    # Flag to check if we are inside any node
     in_node = False
 
     for idx, (name, coords) in enumerate(nodes.items()):
         if all(abs(a - b) <= 20 for a, b in zip(coords, [recv_html_X, recv_html_Y])):
             in_node = True
-
             if name in path:
                 current_index = path.index(name)
                 if current_index < len(path) - 1:
+                
+                    print("INSIDE NODE")
+                    print(turn_to)
+                    print(recv_html_X,recv_html_Y)
+
                     next_node = path[current_index + 1]
                     next_coords = nodes[next_node]
 
@@ -66,19 +68,15 @@ def router():
                     diff = (target_angle - recv_html_bearing) % 360
 
                     if diff < 180:
-                        turn_to = 1
-                        
+                        turn_to = -1
                     else:
-                        turn_to = -1  # anticlockwise
-
+                        turn_to = 1  # anticlockwise
                     print(f"At node {name}. Next: {next_node}, Target angle: {target_angle:.2f}, Bearing: {recv_html_bearing}, Turn: {turn_to}")
                 else:
-                    turn_to = 0  # At final node, no turning needed
+                    turn_to = 0
             else:
-                turn_to = 0  # Node not in path, nothing to do
-
-            break  # No need to check further nodes
-
+                turn_to = 0
+            break
     if not in_node:
         turn_to = 0
 
@@ -89,27 +87,27 @@ app = Flask(__name__)
 
 @app.route('/numbers', methods=['GET'])
 def handle_numbers():
-    global thr, steer, speed
+    global thr, steer, speed, turn_to, recv_html_X, recv_html_Y, recv_html_bearing
 
     # = DECODE RECV FROM SW = 
     recv_html_X = int(request.args.get('num1', 0))
     recv_html_Y = int(request.args.get('num2', 0))  
     recv_html_bearing = int(request.args.get('num3', 0))
     
-    print(f"Received: X coord={recv_html_X}, Y coord={recv_html_Y}, bearing={recv_html_bearing}")
+    #print(f"Received: X coord={recv_html_X}, Y coord={recv_html_Y}, bearing={recv_html_bearing}")
 
     #  = ENCODE SEND TO SW =
 
-    print(f"Returned: thr={4}, steer={steer}, bearing={recv_html_bearing}")
+    #print(f"Returned: thr={1}, steer={steer}, bearing={recv_html_bearing}")
 
     # SEND TXT TO SW, MAKE SURE URL IS CORRECT
-    return Response(f"{4},{steer},{recv_html_bearing}", mimetype='text/plain')
+    return Response(f"{1},{steer},{recv_html_bearing}", mimetype='text/plain')
 
 #-------------------------------------------------------------------------------------------------------------------------
 
 def camera_loop():
     
-    global thr, steer, speed, turn_to
+    global thr, steer, speed, turn_to, recv_html_X, recv_html_Y, recv_html_bearing
     # == CAM INITIALIZE ==
     
     cap = cv2.VideoCapture(CAM_INDEX)
@@ -136,7 +134,7 @@ def camera_loop():
 
         # === HSV MASK OF ROAD ===
         lower_dark = np.array([0, 0, 0])
-        upper_dark = np.array([180, 60, 70])
+        upper_dark = np.array([180, 80, 70])
 
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) #CONVERT to HSV BECAUSE WHY NOT
         mask_dark = cv2.inRange(hsv_frame, lower_dark, upper_dark) #FIND ROAD USING DEFINED MASK PARAMETERS
@@ -144,7 +142,7 @@ def camera_loop():
 
         # === CONTOUR MAKING ===
         contours, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        output = cv2.cvtColor(hsv_frame, cv2.COLOR_HSV2BGR)
+        output = hsv_frame
         cv2.polylines(output, [pts], isClosed=True, color=(255, 0, 0), thickness=2) # TRAPEZOID DRAW
 
         cx_whole = cy_whole = cx_left = cy_left = cx_right = cy_right = None
@@ -190,7 +188,7 @@ def camera_loop():
                         cv2.circle(output, (cx_right, cy_right), 5, (0, 0, 255), -1)
 
                 steer_value = 0
-
+                router()
                 if turn_to == 1 and cx_right is not None:
                     steer_value = (cx_right - (w // 2)) * 0.75
                     cv2.circle(output, (cx_right, cy_right), 15, (0, 0, 255), -1)
@@ -199,7 +197,7 @@ def camera_loop():
                     cv2.circle(output, (cx_left, cy_left), 15, (255, 0, 0), -1)
                 elif cx_whole is not None:
                     steer_value = (cx_whole - (w // 2)) * 0.75
-                    cv2.circle(output, (cx_whole, cy_whole), 15, (0,255,0),-1_
+                    cv2.circle(output, (cx_whole, cy_whole), 15, (0,255,0),-1)
                 steer = steer_value
                 print(steer)
                 
