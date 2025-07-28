@@ -1,6 +1,86 @@
-controls a vehicle in stormworks video game 
-you need OBS
-licensed copy of stormworks
-jupyter notebooks or any python IDE
+🚑 Autonomous Vehicle Control System – V7
+An advanced computer vision-based control system for navigating a virtual emergency response vehicle (ambulance) through a predefined environment. This project focuses on real-time pathfinding, autonomous steering, and precision road tracking using image processing and geometry-based guidance.
 
-use code V7 with vehicle.lua
+📌 Overview
+This system automates the navigation of an ambulance from patient pickup to hospital drop-off, following the safest and most efficient route on a predefined road map. It uses real-time video input to compute vehicle positioning and make steering decisions based on geometric analysis and visual road tracking.
+
+🛠️ Core Technologies
+Developed using robust scientific and engineering tools:
+
+Python (scripting and control logic)
+
+OpenCV (video processing, image masking)
+
+NumPy, Pandas (data handling and numerical computation)
+
+Matplotlib, SciKit (analysis and visualization)
+
+Custom Lua script for in-game vehicle interfacing (vehicle.lua)
+
+🎯 Key Features
+🚦 Real-time Video Processing
+Captures and processes live video frames to detect lane boundaries and road structure.
+
+📐 Centroid-Based Navigation
+Implements geometric calculations (centroid of HSV-masked road areas) to determine directional offsets for steering corrections.
+
+🧭 Autonomous Route Execution
+Automatically controls throttle, steering, and navigation based on detected path alignment.
+
+🏥 End-to-End Mission Automation
+Handles the full operation lifecycle—from patient pickup to hospital arrival—without user intervention.
+
+⚙️ System Requirements
+To run this system successfully, you’ll need:
+
+A licensed copy of Stormworks: Build and Rescue
+
+OBS Studio (for capturing in-game video feed)
+
+Python 3.x environment (Jupyter Notebook or any modern IDE)
+
+Vehicle configuration: Use Code V7 with the included vehicle.lua
+
+🧠 Technical Highlights
+HSV-Based Masking
+Filters road boundaries using HSV color space segmentation for robustness under variable lighting.
+
+Centroid Calculation
+Calculates the centroid of the masked region to determine the lateral offset, guiding steering commands with precision.
+
+Control Signal Translation
+Generates control signals based on positional offset to dynamically adjust vehicle direction.
+
+Modular Architecture
+Designed to be adaptable for other vehicle types and mission profiles with minimal modification.
+
+🚧 Future Enhancements
+Integration of PID control for smoother steering
+
+Adaptive speed control based on road curvature
+
+Map overlay tracking for improved global navigation
+
+Reinforcement learning module for dynamic obstacle avoidance
+
+📂 Project Structure
+bash
+Copy
+Edit
+├── vehicle.lua           # Lua script for vehicle control interface
+├── notebooks/            # Jupyter notebooks for development & testing
+├── src/
+│   ├── controller.py     # Core logic for video input processing & control
+│   └── utils.py          # Helper functions (geometry, masking, visualization)
+├── data/                 # Sample video input and logs
+🚀 Deployment Instructions
+Launch Stormworks and load the configured ambulance vehicle.
+
+Start OBS Studio and capture the in-game camera feed.
+
+Run the control logic from your Python IDE or Jupyter environment.
+
+Monitor real-time navigation and control behavior.
+
+👨‍💻 Developed By
+Designed and implemented by a senior systems developer with expertise in computer vision, robotics, and simulation-based control systems.
