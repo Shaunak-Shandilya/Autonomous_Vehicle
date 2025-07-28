@@ -64,14 +64,11 @@ Map overlay tracking for improved global navigation
 Reinforcement learning module for dynamic obstacle avoidance
 
 📂 Project Structure
-bash
-Copy
-Edit
+
 ├── vehicle.lua           # Lua script for vehicle control interface
 ├── notebooks/            # Jupyter notebooks for development & testing
 ├── src/
-│   ├── controller.py     # Core logic for video input processing & control
-│   └── utils.py          # Helper functions (geometry, masking, visualization)
+│   ├── main.py           # Core logic for video input processing & control (includes helper functions)
 ├── data/                 # Sample video input and logs
 🚀 Deployment Instructions
 Launch Stormworks and load the configured ambulance vehicle.
@@ -83,4 +80,4 @@ Run the control logic from your Python IDE or Jupyter environment.
 Monitor real-time navigation and control behavior.
 
 👨‍💻 Developed By
-Designed and implemented by a senior systems developer with expertise in computer vision, robotics, and simulation-based control systems.
+Designed and implemented by Shaunak Shandilya with expertise in computer vision and simulation-based control systems.
